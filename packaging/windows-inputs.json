@@ -1,0 +1,23 @@
+[
+  {
+    "filename":"python-3.13.17-amd64.zip",
+    "url":"https://www.python.org/ftp/python/3.13.17/python-3.13.17-amd64.zip",
+    "sha256":"b26ca4b4ee51e157836049934d2b8eabd55939be296f3130254251b6df96ec2f",
+    "bytes":31162518,
+    "provenance":"CPython entry in official python-3.13.17-amd64.zip.spdx.json"
+  },
+  {
+    "filename":"numpy-2.2.6-cp313-cp313-win_amd64.whl",
+    "url":"https://files.pythonhosted.org/packages/cb/3b/d58c12eafcb298d4e6d0d40216866ab15f59e55d148a5658bb3132311fcf/numpy-2.2.6-cp313-cp313-win_amd64.whl",
+    "sha256":"b0544343a702fa80c95ad5d3d608ea3599dd54d4632df855e4c8d24eb6ecfa1c",
+    "bytes":12610885,
+    "provenance":"PyPI numpy/2.2.6 JSON metadata"
+  },
+  {
+    "filename":"opencv_python_headless-4.12.0.88-cp37-abi3-win_amd64.whl",
+    "url":"https://files.pythonhosted.org/packages/f2/35/0858e9e71b36948eafbc5e835874b63e515179dc3b742cbe3d76bc683439/opencv_python_headless-4.12.0.88-cp37-abi3-win_amd64.whl",
+    "sha256":"86b413bdd6c6bf497832e346cd5371995de148e579b9774f8eba686dee3f5528",
+    "bytes":38923559,
+    "provenance":"PyPI opencv-python-headless/4.12.0.88 JSON metadata"
+  }
+]

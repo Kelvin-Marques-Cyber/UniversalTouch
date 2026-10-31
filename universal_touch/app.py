@@ -10,6 +10,7 @@ from tkinter import messagebox, ttk
 from .backends import create_mouse, set_dpi_awareness
 from .gestures import GestureController
 from . import __version__
+from .preferences import Preferences
 
 
 class CursorHint:
@@ -63,7 +64,7 @@ class CursorHint:
 
 
 class Application:
-    def __init__(self, root, camera=0, fps=15):
+    def __init__(self, root, camera=0, fps=15, preferences=None):
         self.root = root
         self.camera_index, self.fps = camera, fps
         self.camera = self.tracker = self.mouse = self.controller = self.hint = None
@@ -74,9 +75,11 @@ class Application:
         self.frame_count = 0
         self.started = 0.
         self.job = None
+        self.preferences = preferences if preferences is not None else Preferences()
+        self.tutorial = None
         root.title('UniversalTouch')
-        root.geometry('490x555')
-        root.minsize(440,500)
+        root.geometry('490x620')
+        root.minsize(470,600)
         root.configure(bg='#101820')
         root.protocol('WM_DELETE_WINDOW',self.close)
         root.bind('<Escape>',lambda _: self.pause())
@@ -99,6 +102,7 @@ class Application:
         ttk.Label(panel,textvariable=self.metrics,foreground='#a5b5c7').pack(anchor='w',pady=(6,15))
         self.start_button = ttk.Button(panel,text='Iniciar gestos',command=self.toggle)
         self.start_button.pack(fill='x')
+        ttk.Button(panel,text='Aprender os gestos · treino interativo',command=self.open_tutorial).pack(fill='x',pady=(8,0))
         ttk.Label(panel,text='Primeiro, mostre a mão aberta por um instante.',wraplength=420).pack(anchor='w',pady=(12,14))
         self.show_hint = tk.BooleanVar(value=True)
         self.show_preview = tk.BooleanVar(value=False)
@@ -131,8 +135,27 @@ class Application:
         except Exception as exc:
             self.start_button.configure(state='disabled')
             self.status.set('Entrada do sistema indisponível')
-            messagebox.showerror('UniversalTouch',str(exc),parent=self.root)
+            self.metrics.set(str(exc))
         self.poll_keys()
+        if not self.preferences.tutorial_seen:
+            self.root.after(100,self.open_tutorial)
+
+    def open_tutorial(self):
+        if self.closed: return
+        if self.tutorial is not None:
+            self.tutorial.window.lift()
+            return
+        self.pause()
+        from .tutorial_ui import Tutorial
+        self.tutorial = Tutorial(self.root,self.camera_index,self.tutorial_closed,
+                                 fps=self.fps,mirror=self.mirror.get())
+
+    def tutorial_closed(self,accepted):
+        self.tutorial = None
+        if accepted:
+            try: self.preferences.accept_tutorial()
+            except OSError:
+                self.metrics.set('Não foi possível salvar a preferência. O tutorial reaparecerá ao abrir.')
 
     def poll_keys(self):
         if self.closed: return
@@ -153,6 +176,10 @@ class Application:
 
     def start(self):
         if self.running or not self.controller or self.closed: return
+        if self.tutorial is not None: return
+        if not self.preferences.tutorial_seen:
+            self.open_tutorial()
+            return
         self.status.set('Preparando câmera e modelos…')
         self.root.update_idletasks()
         try:
@@ -194,12 +221,12 @@ class Application:
     def preview_changed(self):
         if self.show_preview.get():
             self.preview_label.pack(pady=8)
-            self.root.geometry('490x745')
+            self.root.geometry('490x780')
         else:
             self.preview_label.pack_forget()
             self.preview_label.configure(image='')
             self.preview_label.image = None
-            self.root.geometry('490x555')
+            self.root.geometry('490x620')
 
     def tick(self):
         self.job = None
@@ -256,6 +283,8 @@ class Application:
     def close(self):
         if self.closed: return
         try:
+            if self.tutorial is not None:
+                self.tutorial.close(False)
             self.pause()
         finally:
             self.closed = True

@@ -1,6 +1,6 @@
 # UniversalTouch 0.1
 
-Controle local por gestos, com prioridade para baixo consumo, precisão do cursor e encerramento simples. Windows e Linux têm aplicativo desktop; Android tem aplicativo nativo para controlar o próprio aparelho. O usuário autorizou implementação, instalação no próprio PC e publicação neste repositório e em releases.
+Controle local por gestos, com prioridade para baixo consumo, precisão do cursor e encerramento simples. Foco atual: Windows e Linux, com tutorial interativo antes do primeiro uso. O usuário autorizou implementação, instalação no próprio PC e publicação neste repositório e em releases. O Android foi implementado e depois retirado da prioridade pelo usuário; o código é preservado como experimental, sem publicação de APK nesta entrega.
 
 O repositório já usa Apache-2.0. Preservamos essa licença: o desktop usa diretamente modelos e exemplos Apache-2.0 do OpenCV Zoo. Mudra foi pesquisado como referência, mas seu código AGPL não integra o produto. Consideradas: aplicação Electron (memória desnecessária), pacote MediaPipe completo/Qt (mais dependências), OpenCV headless/Tk (escolhido no desktop), Android nativo/MediaPipe (escolhido no celular).
 

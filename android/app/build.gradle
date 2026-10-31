@@ -72,7 +72,7 @@ tasks.named('preBuild').configure { dependsOn 'downloadHandModel' }
 
 def gestureClasses = layout.buildDirectory.dir('gesture-tests')
 def compileGestureTests = tasks.register('compileGestureTests', JavaCompile) {
-    source = files('src/main/java/org/universaltouch/android/GestureEngine.java', 'src/main/java/org/universaltouch/android/FrameMailbox.java', 'src/main/java/org/universaltouch/android/CoordinateMapper.java', fileTree('src/gestureTest/java'))
+    source = files('src/main/java/org/universaltouch/android/GestureEngine.java', 'src/main/java/org/universaltouch/android/FrameMailbox.java', 'src/main/java/org/universaltouch/android/CoordinateMapper.java', 'src/main/java/org/universaltouch/android/TutorialProgress.java', 'src/main/java/org/universaltouch/android/FrameDispatcher.java', fileTree('src/gestureTest/java'))
     classpath = files()
     destinationDirectory = gestureClasses
     sourceCompatibility = '17'

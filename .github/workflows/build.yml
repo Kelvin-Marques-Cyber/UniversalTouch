@@ -6,6 +6,11 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      build_android:
+        description: 'Build the experimental Android preview (desktop is the current focus)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -97,6 +102,7 @@ jobs:
 
   android:
     name: Android preview APK
+    if: github.event_name == 'workflow_dispatch' && inputs.build_android
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -135,7 +141,7 @@ jobs:
   release:
     name: Publish verified tagged release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [python-tests, desktop, android]
+    needs: [python-tests, desktop]
     runs-on: ubuntu-22.04
     permissions:
       contents: write

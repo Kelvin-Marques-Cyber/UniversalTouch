@@ -6,5 +6,7 @@ public final class AllTests {
         GestureEngineTest.main(args);
         FrameMailboxTest.main(args);
         CoordinateMapperTest.main(args);
+        TutorialProgressTest.main(args);
+        FrameDispatcherTest.main(args);
     }
 }

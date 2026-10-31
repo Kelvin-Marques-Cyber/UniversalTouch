@@ -7,5 +7,7 @@ import org.junit.Test;
 public final class GestureUnitTest {
     @Test public void safetyAndSmoothing() { GestureEngineTest.main(new String[0]); }
     @Test public void boundedActionDelivery() { FrameMailboxTest.main(new String[0]); }
+    @Test public void interactivePractice() { TutorialProgressTest.main(new String[0]); }
+    @Test public void trainingNeverInjectsGestures() { FrameDispatcherTest.main(new String[0]); }
     @Test public void cameraOrientation() { CoordinateMapperTest.main(new String[0]); }
 }

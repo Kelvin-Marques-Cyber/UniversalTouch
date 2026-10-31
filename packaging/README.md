@@ -1,14 +1,16 @@
 # Desktop packages and builds
 
-The Windows ZIP targets Windows 10/11 x86-64. Extract the whole `UniversalTouch` folder before opening `UniversalTouch.exe`. It includes Python, Tk, OpenCV, NumPy, and the models. The executable is unsigned; no certificate or reputation bypass is included.
+Current desktop preview: Linux was built and tested locally; the Windows ZIP is assembled from verified official binaries and has not been executed on Windows. GitHub Actions is blocked by an account billing lock before any runner starts. No APK is included in this PC-focused release.
 
-The Linux archive targets x86-64 systems with **glibc 2.35 or newer**. GitHub Actions builds it on Ubuntu 22.04. Extract the whole folder, then run `./UniversalTouch`. A desktop session, a working camera driver, and basic X11/Tk/GLib libraries are required. Ubuntu 22.04/24.04, recent Debian, Fedora, Arch, and openSUSE are candidates within that baseline; a successful build on Ubuntu does not certify every distribution. Alpine/musl, older glibc, ARM, and 32-bit Linux should use a compatible source environment rather than this archive.
+The Windows preview targets Windows 10/11 x86-64. Extract the whole `UniversalTouch-Windows` folder and open `Iniciar UniversalTouch.cmd`. It includes official CPython 3.13.17 with Tcl/Tk and VC runtime, NumPy, OpenCV, and models. `Diagnosticar.cmd` runs the offline self-test. The `preview-untested` filename makes its validation boundary explicit. Native PyInstaller `UniversalTouch.exe` packages can be built on Windows when a runner is available.
+
+The current Linux archive is a host build for x86-64 and **glibc 2.40 or newer**, tested on openSUSE Leap 16. Extract the whole folder, then run `./UniversalTouch`. A desktop session, a working camera driver, and basic X11/Tk/GLib libraries are required. The CI profile is prepared for Ubuntu 22.04/glibc2.35; it has not run due to the account lock. For older distributions use a source install with Python3.10–3.13. Alpine/musl, ARM, and 32-bit targets need their own compatible environment; this archive does not support them.
 
 X11 input uses python-xlib. On Wayland the Linux build includes evdev, but the desktop must permit virtual pointer/keyboard input. Cursor positioning, compositor behavior, and access policy vary. A source install with `--with-wayland` provides the same optional backend. Actual gesture control needs a physical camera and an interactive desktop; CI's no-camera self-test checks model inference and application packaging.
 
 ## Install a local source checkout
 
-Use Python 3.10 or newer. Review the local installer first:
+Use Python 3.10–3.13. If your distribution defaults to a newer Python, set `PYTHON_BIN=python3.13` for the installer. Review the local installer first:
 
 ```bash
 bash scripts/install_linux.sh --print-system-deps
@@ -59,11 +61,20 @@ python scripts/build_desktop.py
 
 1. Set `project.version` and Android's version consistently, run local checks, and commit the complete source.
 2. Push a matching tag such as `v0.1.0`. The workflow rejects tags that differ from `project.version`.
-3. All Python matrix checks, native Linux/Windows builds and frozen self-tests, and the Android gesture/lint/APK build must pass before the release job runs.
-4. GitHub publishes desktop archives, an Android preview APK, a source archive, and `SHA256SUMS.txt`. Versions starting with `0.` are marked prereleases.
+3. All Python matrix checks, native Linux/Windows builds and frozen self-tests must pass before the automatic release job runs. Android is optional via manual workflow input and does not gate PC releases.
+4. GitHub publishes desktop archives, a source archive, and `SHA256SUMS.txt`. Versions starting with `0.` are marked prereleases. While Actions remains locked, publish locally verified artifacts with clear compatibility/testing labels instead of implying that CI ran.
 
 The source archive is produced from the tagged commit. Actions are pinned to official release commit hashes. No camera frame, local configuration, keystore, or credential is packaged. Standard build artifacts are also available on successful non-tag CI runs.
 
-The Android APK is explicitly a **preview**, signed with the Android build's debug key and using a preview application ID. It can be installed for evaluation, but a new ephemeral CI key may require uninstalling an earlier preview before updating. Production signing is a separate maintained-key release process; this workflow does not load signing secrets. Desktop applications are also unsigned.
+Android source remains experimental and no APK is part of this delivery. Desktop applications are unsigned; no certificate or reputation bypass is included.
+
+## Assemble the Windows preview without a Windows runner
+
+```bash
+python scripts/fetch_models.py
+python scripts/build_windows_portable.py
+```
+
+This assembles the official complete Windows Python ZIP and Windows wheels into a portable folder. Input hashes and provenance are pinned in `windows-inputs.json`; archive paths, required Tk files, dependency files and PE x86-64 headers are checked. This is **not** cross-compilation, and static checks do not prove native runtime behavior. The output deliberately carries `preview-untested` in its name. A future Windows machine should run `Diagnosticar.cmd`, then verify the tutorial, webcam, global shortcuts and native input.
 
 Verify a download with `sha256sum -c SHA256SUMS.txt` on Linux, or compare `(Get-FileHash .\<filename> -Algorithm SHA256).Hash` with the matching entry on Windows PowerShell. Hash verification detects changed downloads; it does not supply code-signing identity.

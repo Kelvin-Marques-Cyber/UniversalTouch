@@ -1,8 +1,10 @@
-Preview release of UniversalTouch: local webcam hand control for Windows and Linux, plus an Android Accessibility preview.
+Prévia do UniversalTouch para PC: controle local por gestos da mão e tutorial interativo antes do primeiro uso.
 
-- Windows: extract the complete ZIP and run `UniversalTouch.exe` (Windows 10/11 x86-64).
-- Linux: extract the complete archive and run `./UniversalTouch` (x86-64, glibc 2.35+; X11, or optional Wayland setup described in the included README).
-- Android: the `android-preview.apk` is debug-signed and uses a preview application ID. A changed preview signing key can require uninstalling an earlier preview. Review camera and Accessibility access on the device.
-- Source: models are fetched and SHA-256 verified using `scripts/fetch_models.py` before building.
+- **Linux testado no PC:** x86-64, openSUSE Leap16/KDE/X11, glibc2.40+. Extraia a pasta inteira e execute `UniversalTouch`. Outras distribuições podem instalar pelo código; Wayland exige a configuração descrita no README.
+- **Windows portátil, ainda sem teste em Windows:** x64, runtime Python oficial completo, Tcl/Tk, VC runtime, NumPy/OpenCV e modelos com hashes verificados. Extraia tudo e abra `Iniciar UniversalTouch.cmd`; `Diagnosticar.cmd` verifica os modelos. O nome do ZIP inclui `preview-untested`.
+- **Tutorial:** mostra a webcam, ensina a posicionar a mão, mover o ponto até dois alvos e fazer uma pinça no alvo central. O treino não envia cliques para outros aplicativos. É possível repetir ou pular.
+- **Recursos medidos no Linux:** aproximadamente 32,5 MiB antes de usar a câmera e 115 MiB com janela/tutorial ativos. Desempenho depende do hardware; veja `docs/performance.md`. Nenhum vídeo é salvo ou transmitido.
+- **Verificação:** 22 testes do aplicativo passaram, incluindo eventos reais X11 e indicador nos cantos; 12 testes de ferramentas de distribuição passaram; inferência dos dois modelos e reconhecimento de uma imagem oficial com mão verificados. Câmera e pausa do tutorial foram testadas no PC.
+- Código-fonte e SHA256SUMS incluídos. Android preservado como código experimental, sem APK nesta entrega a pedido do usuário.
 
-Desktop executables are unsigned. These are preview builds; camera behavior, gesture thresholds, and native desktop input still need checking on each target device. CI verifies model inference without a camera, unit tests, frozen desktop startup, and the Android build. SHA-256 checksums accompany the downloads.
+O GitHub Actions não iniciou jobs por uma restrição de cobrança da conta. Esta release usa builds/verificações locais; não afirma validação de Windows, Wayland ou todas as distribuições. Aplicativos desktop não têm assinatura de produção.

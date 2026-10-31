@@ -71,7 +71,7 @@ public final class PointerAccessibilityService extends AccessibilityService {
         if (pointer != null) pointer.setVisibility(View.INVISIBLE);
     }
     private void render(GestureEngine.Frame frame) {
-        if (!CameraGestureService.running) { if (pointer != null) pointer.setVisibility(View.INVISIBLE); return; }
+        if (!CameraGestureService.canControl()) { if (pointer != null) pointer.setVisibility(View.INVISIBLE); return; }
         KeyguardManager keyguard = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
         if (keyguard.isKeyguardLocked() || !power.isInteractive()) { stopSession("Parado: tela bloqueada"); return; }
@@ -113,7 +113,7 @@ public final class PointerAccessibilityService extends AccessibilityService {
     }
     private void tap(float x, float y) { Path path = new Path(); path.moveTo(x, y); send(path, 70); }
     private boolean send(Path path, long duration) {
-        if (gestureInFlight || !CameraGestureService.running) return false;
+        if (gestureInFlight || !CameraGestureService.canControl()) return false;
         GestureDescription gesture = new GestureDescription.Builder().addStroke(new GestureDescription.StrokeDescription(path, 0, duration)).build();
         gestureInFlight = true;
         boolean accepted = dispatchGesture(gesture, new GestureResultCallback() {

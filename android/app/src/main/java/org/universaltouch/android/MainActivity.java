@@ -24,6 +24,7 @@ import android.widget.TextView;
 public final class MainActivity extends Activity {
     private TextView status;
     private Button start;
+    private Button cameraPermission;
     private boolean startAfterNotification;
     private final Handler handler = new Handler();
     private final Runnable refresh = new Runnable() {
@@ -32,6 +33,9 @@ public final class MainActivity extends Activity {
                 status.setText(CameraGestureService.status + "\nAcessibilidade: " +
                         (PointerAccessibilityService.isConnected() ? "ativada" : "desativada"));
                 start.setEnabled(!CameraGestureService.running);
+                boolean cameraGranted = checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
+                cameraPermission.setText(cameraGranted ? "2  ·  Câmera permitida" : "2  ·  Permitir câmera");
+                cameraPermission.setEnabled(!cameraGranted);
             }
             handler.postDelayed(this, 600);
         }
@@ -39,6 +43,11 @@ public final class MainActivity extends Activity {
 
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (!getSharedPreferences("control", MODE_PRIVATE).getBoolean("tutorialSeen", false)) {
+            startActivity(new Intent(this, TutorialActivity.class));
+            finish();
+            return;
+        }
         SharedPreferences prefs = getSharedPreferences("control", MODE_PRIVATE);
         ScrollView scroll = new ScrollView(this);
         LinearLayout content = new LinearLayout(this);
@@ -59,9 +68,10 @@ public final class MainActivity extends Activity {
         addText(content, "UniversalTouch", 31, Color.WHITE);
         addText(content, "SEU ANDROID, NAS SUAS MÃOS", 12, Color.rgb(96,227,186));
         addText(content, "Mova um ponteiro e toque na tela usando a câmera frontal. Tudo é processado neste aparelho.", 17, Color.LTGRAY);
+        addButton(content, "Aprender com treino guiado", view -> startActivity(new Intent(this, TutorialActivity.class)));
         status = addText(content, "Pronto para configurar", 16, Color.rgb(96,227,186));
         addButton(content, "1  ·  Ativar acessibilidade", view -> discloseAccessibility());
-        addButton(content, "2  ·  Permitir câmera", view -> requestCamera());
+        cameraPermission = addButton(content, "2  ·  Permitir câmera", view -> requestCamera());
         addText(content, "3  ·  Ajuste antes de iniciar", 18, Color.WHITE);
         Switch rear = new Switch(this);
         rear.setText("Usar câmera traseira");
@@ -126,7 +136,7 @@ public final class MainActivity extends Activity {
             startControl();
         }
     }
-    @Override protected void onResume() { super.onResume(); handler.post(refresh); }
+    @Override protected void onResume() { super.onResume(); if (status != null) handler.post(refresh); }
     @Override protected void onPause() { handler.removeCallbacks(refresh); super.onPause(); }
     private TextView addText(LinearLayout parent, String text, int size, int color) {
         TextView label = new TextView(this);

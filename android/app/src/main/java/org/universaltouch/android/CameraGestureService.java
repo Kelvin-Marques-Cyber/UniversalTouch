@@ -52,10 +52,14 @@ import java.util.List;
 /** One camera, one worker, two camera buffers, and no frame queue or recording. */
 public final class CameraGestureService extends Service {
     public static final String ACTION_START = "org.universaltouch.android.START";
+    public static final String ACTION_TRAIN = "org.universaltouch.android.TRAIN";
     public static final String ACTION_STOP = "org.universaltouch.android.STOP";
     public static volatile boolean running;
+    public static volatile boolean trainingActive;
+    public static boolean canControl() { return running && !trainingActive; }
     public static volatile String status = "Parado · câmera liberada";
     private static final int NOTIFICATION_ID = 20;
+    private FrameDispatcher dispatcher;
     private final GestureEngine engine = new GestureEngine();
     private HandlerThread thread;
     private Handler worker;
@@ -80,7 +84,8 @@ public final class CameraGestureService extends Service {
             KeyguardManager lock = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
             PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
             if (!power.isInteractive() || lock.isKeyguardLocked()) { fail("Parado: tela bloqueada"); return; }
-            if (!PointerAccessibilityService.isConnected()) { fail("Parado: acessibilidade desativada"); return; }
+            if (trainingActive && !TrainingBridge.foreground) { fail("Treino pausado: aplicativo fora da tela"); return; }
+            if (!trainingActive && !PointerAccessibilityService.isConnected()) { fail("Parado: acessibilidade desativada"); return; }
             if (SystemClock.elapsedRealtime() - lastImage > 8000) { fail("A câmera não respondeu. Tente iniciar novamente."); return; }
             main.postDelayed(this, 1000);
         }
@@ -98,12 +103,16 @@ public final class CameraGestureService extends Service {
     }
     @Override public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null || ACTION_STOP.equals(intent.getAction())) { status = "Parado pelo usuário · câmera liberada"; stopSelf(); return START_NOT_STICKY; }
-        if (!ACTION_START.equals(intent.getAction()) || running) return START_NOT_STICKY;
+        boolean training = ACTION_TRAIN.equals(intent.getAction());
+        if ((!ACTION_START.equals(intent.getAction()) && !training) || running) return START_NOT_STICKY;
         KeyguardManager lock = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
         if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                !PointerAccessibilityService.isConnected() || lock.isKeyguardLocked()) {
+                (!training && !PointerAccessibilityService.isConnected()) || (training && !TrainingBridge.foreground) || lock.isKeyguardLocked()) {
             status = "Ative a acessibilidade e permita a câmera antes de iniciar."; stopSelf(); return START_NOT_STICKY;
         }
+        trainingActive = training;
+        TrainingBridge.latest = null;
+        dispatcher = new FrameDispatcher(training, frame -> TrainingBridge.publish(frame, uprightPoints, front), PointerAccessibilityService::deliver);
         try {
             Notification notification = createNotification();
             if (Build.VERSION.SDK_INT >= 30) startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA);
@@ -126,8 +135,8 @@ public final class CameraGestureService extends Service {
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, CameraGestureService.class).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, channelId) : new Notification.Builder(this);
-        return builder.setSmallIcon(R.drawable.ic_hand).setContentTitle("UniversalTouch · câmera ativa")
-                .setContentText("Controle local por gestos. Toque em Parar para encerrar.")
+        return builder.setSmallIcon(R.drawable.ic_hand).setContentTitle(trainingActive ? "UniversalTouch · treino seguro" : "UniversalTouch · câmera ativa")
+                .setContentText(trainingActive ? "Treino somente no aplicativo. Parar encerra a câmera." : "Controle local por gestos. Toque em Parar para encerrar.")
                 .setContentIntent(open).setOngoing(true).setOnlyAlertOnce(true)
                 .addAction(new Notification.Action.Builder(null, "Parar", stop).build()).build();
     }
@@ -211,7 +220,7 @@ public final class CameraGestureService extends Service {
                 HandLandmarkerResult result = detector.detectForVideo(input, ImageProcessingOptions.builder().setRotationDegrees(rotation).build(), now);
                 engine.setSmoothing(.06 + prefs.getInt("smoothing", 25) * .004);
                 if (result.landmarks().isEmpty()) {
-                    PointerAccessibilityService.deliver(engine.update(now, false, 0, 0, 0, false));
+                    dispatcher.send(engine.update(now, false, 0, 0, 0, false));
                     status = "Câmera ativa · mão não encontrada";
                     return;
                 }
@@ -233,7 +242,7 @@ public final class CameraGestureService extends Service {
                 x = .5 + (x - .5) * gain;
                 double y = .5 + (uprightPoints[17] - .5) * gain;
                 GestureEngine.Frame frame = engine.update(now, true, x, y, pinch, scrollPose);
-                PointerAccessibilityService.deliver(frame);
+                dispatcher.send(frame);
                 status = scrollPose ? "Rolagem · mova dois dedos" : frame.armed ? "Pronto · una polegar e indicador para tocar" : "Abra a mão para armar o toque";
             }
         } catch (Exception error) { fail("Falha ao analisar a mão. Controle encerrado; câmera liberada."); }
@@ -275,6 +284,8 @@ public final class CameraGestureService extends Service {
     @Override public void onDestroy() {
         stopping = true;
         running = false;
+        trainingActive = false;
+        TrainingBridge.latest = null;
         PointerAccessibilityService.hide();
         main.removeCallbacksAndMessages(null);
         unregisterReceiver(screenOff);
