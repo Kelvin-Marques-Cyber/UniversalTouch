@@ -18,7 +18,8 @@ class Preferences:
         self.tutorial_seen = False
         try:
             settings = json.loads(self.path.read_text())
-            self.tutorial_seen = isinstance(settings,dict) and settings.get('tutorial_seen') is True
+            self.tutorial_seen = (isinstance(settings,dict) and settings.get('tutorial_seen') is True
+                                  and settings.get('tutorial_version') == 3)
         except (OSError,ValueError):
             pass
 
@@ -26,5 +27,5 @@ class Preferences:
         self.tutorial_seen = True
         self.path.parent.mkdir(parents=True,exist_ok=True)
         temp = self.path.with_suffix('.tmp')
-        temp.write_text(json.dumps({'tutorial_seen':True})+'\n')
+        temp.write_text(json.dumps({'tutorial_seen':True,'tutorial_version':3})+'\n')
         temp.replace(self.path)

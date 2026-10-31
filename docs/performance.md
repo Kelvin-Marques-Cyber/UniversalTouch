@@ -7,7 +7,7 @@ Medições locais de 31/10/2026: Dell Inspiron 5567, openSUSE Leap 16, KDE/X11, 
 | Janela aberta, antes de usar a câmera | 32,5 MiB |
 | Janela e câmera ativas, sem prévia | 114,0 MiB |
 | Janela e câmera ativas, com prévia | 114,7 MiB |
-| Tutorial interativo, câmera e prévia | 114,8 MiB |
+| Tutorial interativo com gestos precisos, câmera e prévia | 114,2 MiB |
 | Núcleo com imagem oficial de mão, 16 quadros | 93,8 MiB |
 | Binário empacotado, benchmark com webcam (pico) | 101,6 MiB |
 
@@ -19,4 +19,6 @@ O caminho desktop usa uma mão, modelos de aproximadamente 8 MB combinados, Open
 
 `python -m universal_touch --benchmark 10` mede memória máxima residente, uso de CPU de um núcleo, quadros processados e mediana de inferência, sem injetar entrada. Esse teste não mede a qualidade dos gestos de uma pessoa. Para precisão, experimente cliques em alvos pequenos, arrasto e rolagem sob sua iluminação; ajuste espelhamento, distância e FPS conforme necessário.
 
-Windows e Android precisam de teste físico com câmera, DPI, versões e permissões reais. CI cobre testes de lógica e compilação; não constitui validação em todos os dispositivos. Esta release inicial é uma prévia.
+Windows e Android precisam de teste físico com câmera, DPI, versões e permissões reais. A configuração de CI prevê testes de lógica e compilação, mas os jobs não iniciaram devido ao bloqueio da conta. Esta release inicial é uma prévia.
+
+A suíte local atual passou 37 testes do aplicativo e 12 de distribuição. Inclui pinça mantida por 1,5 s enquanto a mão desloca 80 pixels (cursor imóvel, sem arrasto), clique único ao soltar, retorno sem salto, exclusão entre rolagem e clique, perda de mão e dados inválidos. No X11 real, os testes verificaram indicador nos cantos, passagem de cliques pelo indicador, minimizar uma janela própria e trocar entre as duas áreas já existentes, restaurando a área inicial. Isso verifica os contratos de controle; não mede a taxa de acerto dos gestos humanos.
