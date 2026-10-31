@@ -15,7 +15,10 @@ class TrainingMouse:
             self.held = True
     def release(self,button):
         if button == 'left': self.held = False
-    def click(self,button): pass
+    def click(self,button):
+        if button=='left':
+            self.press(button)
+            self.release(button)
     def scroll(self,steps): pass
 
 

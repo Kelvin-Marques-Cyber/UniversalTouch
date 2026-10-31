@@ -114,6 +114,32 @@ class X11Mouse:
                 actions.append('quit' if event.state & self.X.ShiftMask else 'toggle')
         return actions
 
+    def perform_action(self, action):
+        """Use window-manager protocols instead of desktop-specific hotkeys."""
+        from Xlib import Xatom
+        from Xlib.protocol.event import ClientMessage
+        def prop(name, kind):
+            value = self.root.get_full_property(self.display.intern_atom(name), kind)
+            return value.value[0] if value is not None and len(value.value) else None
+        if action in ('workspace_next', 'workspace_previous'):
+            current = prop('_NET_CURRENT_DESKTOP', Xatom.CARDINAL)
+            count = prop('_NET_NUMBER_OF_DESKTOPS', Xatom.CARDINAL)
+            if current is None or count is None or count < 2: return False
+            target = int(current) + (1 if action == 'workspace_next' else -1)
+            if not 0 <= target < count: return False
+            name, window, data = '_NET_CURRENT_DESKTOP', self.root, [target,self.X.CurrentTime,0,0,0]
+        elif action == 'minimize':
+            active = prop('_NET_ACTIVE_WINDOW', Xatom.WINDOW)
+            if not active: return False
+            window = self.display.create_resource_object('window', int(active))
+            # ICCCM IconicState. The manager keeps its taskbar entry available.
+            name, data = 'WM_CHANGE_STATE', [3,0,0,0,0]
+        else: return False
+        message = ClientMessage(window=window, client_type=self.display.intern_atom(name), data=(32,data))
+        self.root.send_event(message, event_mask=self.X.SubstructureRedirectMask | self.X.SubstructureNotifyMask)
+        self.display.flush()
+        return True
+
     def passthrough(self, window_id):
         from Xlib.ext import shape
         if not self.display.has_extension('SHAPE'):
@@ -151,6 +177,10 @@ class WindowsMouse:
         self.user.RegisterHotKey.argtypes = [wintypes.HWND,ctypes.c_int,wintypes.UINT,wintypes.UINT]
         self.user.UnregisterHotKey.argtypes = [wintypes.HWND,ctypes.c_int]
         self.user.PeekMessageW.argtypes = [ctypes.POINTER(wintypes.MSG),wintypes.HWND,wintypes.UINT,wintypes.UINT,wintypes.UINT]
+        self.user.GetForegroundWindow.restype = wintypes.HWND
+        self.user.ShowWindowAsync.argtypes = [wintypes.HWND,ctypes.c_int]
+        self.user.ShowWindowAsync.restype = wintypes.BOOL
+        self.user.keybd_event.argtypes = [wintypes.BYTE,wintypes.BYTE,wintypes.DWORD,ctypes.c_size_t]
         self.held = set()
         self.keys = WindowsHotkeys(self.user)
         self.hotkeys_available = self.keys.available
@@ -184,6 +214,24 @@ class WindowsMouse:
 
     def hotkeys(self):
         return self.keys.poll()
+
+    def perform_action(self, action):
+        if action == 'minimize':
+            window = self.user.GetForegroundWindow()
+            return bool(window and self.user.ShowWindowAsync(window,6))
+        if action not in ('workspace_next','workspace_previous'): return False
+        keys = [0x5b,0x11,0x27 if action == 'workspace_next' else 0x25]
+        # Do not release a modifier physically held by the user.
+        if any(self.user.GetAsyncKeyState(key) & 0x8000 for key in keys): return False
+        pressed = []
+        try:
+            for key in keys:
+                self.user.keybd_event(key,0,1 if key in (0x5b,0x25,0x27) else 0,0)
+                pressed.append(key)
+        finally:
+            for key in reversed(pressed):
+                self.user.keybd_event(key,0,2 | (1 if key in (0x5b,0x25,0x27) else 0),0)
+        return True
 
     def passthrough(self, window_id):
         hwnd = self.user.GetParent(window_id) or window_id
@@ -245,6 +293,7 @@ class WaylandMouse:
         self.device.syn()
 
     def hotkeys(self): return []
+    def perform_action(self, action): return False  # Compositor-specific; no universal Wayland protocol.
     def close(self):
         for button in list(self.held): self.release(button)
         self.device.close()

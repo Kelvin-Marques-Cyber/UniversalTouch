@@ -11,6 +11,7 @@ class Result:
     status: str
     pointer: tuple | None = None
     pressed: bool = False
+    progress: float = 0.
 
 
 def distance(a, b):

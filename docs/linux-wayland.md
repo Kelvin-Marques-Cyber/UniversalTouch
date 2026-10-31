@@ -17,4 +17,6 @@ Se necessário, saia e entre novamente na sessão local. A regra utiliza `TAG+="
 
 Essa permissão permite que programas da sessão criem dispositivos de entrada. A instalação não executa os comandos automaticamente. Para remover, apague somente a regra criada acima e recarregue as regras; sair da sessão elimina permissões transitórias. Não use `chmod 666 /dev/uinput` nem conceda acesso geral ao grupo input.
 
+Os gestos de três dedos para áreas de trabalho/minimizar dependem do gerenciador de janelas e estão implementados em X11 via EWMH/ICCCM. Nesta prévia, Wayland suporta mover/clicar/rolar, mas não esses atalhos.
+
 No Wayland, use os botões da janela para iniciar/pausar; atalhos globais e posicionamento livre de sobreposições não são portáveis entre compositores. O ponteiro nativo do sistema indica a posição. Para uma experiência inicial completa com atalhos e indicador, escolha uma sessão X11 na tela de login quando ela estiver disponível.

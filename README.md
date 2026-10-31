@@ -15,19 +15,23 @@ Se o pacote indicar assinatura de desenvolvimento, ele é uma **prévia para tes
 
 ## Usar no PC
 
-1. Abra UniversalTouch. No primeiro uso, o **tutorial interativo** abre com a câmera desligada. Clique em **Começar treino**, abra a mão, leve o ponto verde aos dois alvos e pratique uma pinça no alvo central. Os gestos do tutorial ficam dentro da janela.
+1. Abra UniversalTouch. No primeiro uso, o **tutorial interativo** abre com a câmera desligada. Clique em **Começar treino**, levante só o indicador, leve o ponto verde aos dois alvos e pratique uma pinça no alvo central. Os gestos do tutorial ficam dentro da janela.
 2. Conclua o tutorial e clique em **Iniciar gestos**, ou pressione **Ctrl+Alt+G**. O botão **Aprender os gestos** permite repetir o treino; **Pular por enquanto** leva ao painel sem treinamento.
-3. Mostre a mão aberta por um instante para armar o controle. Use um fundo simples e iluminação frontal.
+3. Mostre só o indicador levantado por um instante para armar o controle, com o polegar afastado e os outros dedos dobrados sem apertar. Use um fundo simples e iluminação frontal.
 4. Mova o indicador para posicionar o cursor. O indicador discreto é opcional; a prévia de vídeo vem desligada para reduzir trabalho.
 
 | Gesto | Ação no desktop |
 |---|---|
-| Indicador apontando | Mover o cursor com suavização |
-| Polegar + indicador | Pressionar botão esquerdo; solte para concluir o clique |
-| Manter a pinça por mais de 0,3 s | Arrastar |
-| Polegar + médio | Clique direito, uma vez por pinça |
-| Indicador e médio erguidos, outros dois recolhidos | Rolar movendo os dedos verticalmente |
-| Punho fechado ou mão fora da imagem | Soltar botões e parar; abra a mão para retomar |
+| Indicador sozinho | Mover o cursor com suavização |
+| Juntar polegar + indicador e soltar | Clique esquerdo ao soltar; cursor congelado durante toda a pinça |
+| Indicador + médio juntos, demais dedos dobrados | Rolar ao mover verticalmente; cursor congelado |
+| Indicador + médio + anelar levantados, mínimo dobrado | Deslizar para os lados: área de trabalho anterior/próxima |
+| Os mesmos três dedos, deslizar para baixo | Minimizar a janela ativa |
+| Mão fora da imagem | Cancelar o clique, soltar botões e parar; indicador sozinho para retomar |
+
+Os atalhos com três dedos executam uma vez por pose; abaixe os dedos antes de repetir. Trocar de área requer áreas já criadas no sistema. No Linux, os atalhos de janelas/áreas usam EWMH em X11; não estão disponíveis em Wayland nesta prévia. No Windows usam as funções do sistema e Win+Ctrl+setas.
+
+A barra de ações aparece durante o uso: **Clique direito** faz a próxima pinça clicar com o botão direito; **Arrastar / soltar** faz a próxima pinça segurar o objeto até soltar. Uma pinça comum nunca vira arrasto por ficar fechada. Ao terminar clique/rolagem, o controle retoma da posição atual da mão, sem saltar para acompanhar o deslocamento feito durante o gesto. A velocidade pode ser reduzida no painel para alvos pequenos. Retire e recoloque a mão para reposicioná-la sem mover o cursor.
 
 **Ctrl+Alt+G** inicia/pausa. **Ctrl+Alt+Shift+G** encerra. **Esc** pausa quando a janela está em foco. Atalhos globais dependem de X11/Windows e podem estar ocupados por outro aplicativo; nesses casos, use a janela. Wayland oferece os controles da janela e o cursor nativo, com limitações de sobreposição.
 

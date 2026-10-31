@@ -24,3 +24,10 @@ Revisão independente encontrou e corrigiu: orientação do Android (testes de r
 
 ## Review focus
 Pausa com arrasto; dados inválidos; retorno da mão com pinça fechada; escala de DPI/monitores; revogação de câmera/acessibilidade. Testes cobrem os três primeiros; teste local de integração cobre monitor único X11; CI e instruções separam compilação de testes em hardware.
+
+## Revisão de precisão solicitada pelo usuário
+- [x] Especificar indicador, pinça e dois dedos; confirmar o mapeamento com o usuário.
+- [x] Testar pinça com mão em movimento; congelar até soltar e refazer origem para não saltar.
+- [x] Separar rolagem e atalhos de três dedos; testar ações X11 reais e cancelamento de arrasto.
+- [x] Atualizar tutorial, painel, velocidade e documentação; medir ciclo real da câmera (114,2 MiB no treino).
+- [ ] Reempacotar, instalar a revisão, publicar alterações e prévia com limitações verificadas.

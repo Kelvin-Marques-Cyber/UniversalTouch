@@ -8,6 +8,47 @@ import unittest
 @unittest.skipUnless(os.environ.get('UNIVERSALTOUCH_INPUT_TEST') == '1' and sys.platform == 'linux',
                      'explicit real X11 input test only')
 class X11IntegrationTests(unittest.TestCase):
+    def test_minimize_and_workspace_protocols_with_own_window(self):
+        import tkinter as tk
+        from Xlib import Xatom
+        from universal_touch.backends import X11Mouse
+        mouse = X11Mouse()
+        root = tk.Tk()
+        root.title('UniversalTouch shortcut verification')
+        root.geometry('220x180+50+50')
+        root.update()
+        root.focus_force()
+        def pump(seconds=.5):
+            deadline=time.monotonic()+seconds
+            while time.monotonic()<deadline:
+                root.update();time.sleep(.01)
+        def read(name):
+            p=mouse.root.get_full_property(mouse.display.intern_atom(name),Xatom.CARDINAL)
+            return int(p.value[0]) if p is not None else None
+        initial=read('_NET_CURRENT_DESKTOP')
+        try:
+            pump()
+            self.assertTrue(mouse.perform_action('minimize'))
+            pump()
+            self.assertEqual(root.state(),'iconic')
+            root.deiconify();pump()
+            count=read('_NET_NUMBER_OF_DESKTOPS')
+            if initial is not None and count and count>1:
+                action='workspace_next' if initial<count-1 else 'workspace_previous'
+                reverse='workspace_previous' if action=='workspace_next' else 'workspace_next'
+                self.assertTrue(mouse.perform_action(action));pump()
+                self.assertNotEqual(read('_NET_CURRENT_DESKTOP'),initial)
+                self.assertTrue(mouse.perform_action(reverse));pump()
+                self.assertEqual(read('_NET_CURRENT_DESKTOP'),initial)
+            else:
+                self.assertFalse(mouse.perform_action('workspace_next'))
+        finally:
+            current=read('_NET_CURRENT_DESKTOP')
+            if initial is not None and current is not None and current!=initial:
+                mouse.perform_action('workspace_previous' if current>initial else 'workspace_next')
+                pump()
+            root.destroy();mouse.close()
+
     def test_hint_at_top_left_does_not_wrap_to_opposite_edge(self):
         import tkinter as tk
         from universal_touch.backends import X11Mouse

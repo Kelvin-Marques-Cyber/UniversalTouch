@@ -3,12 +3,12 @@ import time
 import tkinter as tk
 from tkinter import ttk
 
-from .gestures import GestureController
+from .precise_control import PreciseController
 from .tutorial import TrainingMouse, TutorialProgress
 
 
 class Tutorial:
-    def __init__(self,parent,camera_index,on_close,fps=15,mirror=True):
+    def __init__(self,parent,camera_index,on_close,fps=15,mirror=True,gain=1.8):
         self.on_close = on_close
         self.camera_index = camera_index
         self.fps,self.mirror = fps,mirror
@@ -18,7 +18,7 @@ class Tutorial:
         self.last_preview = 0.
         self.progress = TutorialProgress()
         self.mouse = TrainingMouse()
-        self.controller = GestureController(self.mouse,mirror=mirror)
+        self.controller = PreciseController(self.mouse,mirror=mirror,gain=gain)
         self.window = tk.Toplevel(parent)
         self.window.title('UniversalTouch · aprender com a mão')
         self.window.geometry('590x660')
@@ -30,8 +30,8 @@ class Tutorial:
         body = ttk.Frame(self.window,padding=20)
         body.pack(fill='both',expand=True)
         ttk.Label(body,text='Vamos praticar primeiro',style='Title.TLabel').pack(anchor='w')
-        self.heading = tk.StringVar(value='1 de 3 · abra a mão')
-        self.instruction = tk.StringVar(value='Fique de frente para a webcam, com boa luz. Mostre a mão inteira, a cerca de 40–70 cm da câmera, com a palma virada para ela.')
+        self.heading = tk.StringVar(value='1 de 3 · levante só o indicador')
+        self.instruction = tk.StringVar(value='Fique de frente para a webcam, com boa luz. Levante só o indicador, com a palma para a câmera e os outros dedos dobrados sem apertar. Afaste o polegar do indicador.')
         self.status = tk.StringVar(value='A câmera só liga ao clicar em Começar treino.')
         ttk.Label(body,textvariable=self.heading,font=('sans',13,'bold')).pack(anchor='w',pady=(12,6))
         ttk.Label(body,textvariable=self.instruction,wraplength=540).pack(anchor='w')
@@ -97,7 +97,7 @@ class Tutorial:
                 kp = self.tracker(frame)
                 result = self.controller.update(kp,frame.shape,started)
                 self.progress.update(result.pointer,self.controller.armed,self.mouse.presses,kp is not None)
-                self.draw(result.pointer)
+                self.draw(result.pointer,result.progress)
                 if started-self.last_preview > .33:
                     self.preview(frame,kp)
                     self.last_preview = started
@@ -121,20 +121,20 @@ class Tutorial:
         stage = self.progress.stage
         if stage == 1:
             self.heading.set(f'2 de 3 · mova o cursor · alvo {self.progress.visited+1} de 2')
-            self.instruction.set('Aponte o indicador e mova a mão até o ponto verde entrar no círculo azul. Faça movimentos pequenos; ainda não precisa clicar.')
+            self.instruction.set('Aponte com o indicador e mova devagar até o ponto entrar no círculo azul. Se faltar espaço, retire a mão e volte numa posição confortável; o cursor fica onde estava.')
         elif stage == 2:
-            self.heading.set('3 de 3 · faça um clique')
-            self.instruction.set('Leve o ponto ao círculo central. Junte polegar e indicador, como uma pinça, e solte. Se clicar fora do alvo, abra a mão e tente outra vez.')
+            self.heading.set('3 de 3 · junte e solte para clicar')
+            self.instruction.set('Leve o ponto ao círculo central. Junte polegar e indicador: o cursor trava. Solte os dedos para clicar. Manter a pinça fechada não arrasta o cursor.')
         elif stage == 3:
             self.heading.set('Pronto · movimentos e clique praticados')
-            self.instruction.set('Para usar, clique em Iniciar gestos na janela principal. Mantenha a pinça para arrastar; dois dedos erguidos rolam. Ctrl+Alt+G pausa no Windows/X11; Esc pausa com a janela em foco.')
+            self.instruction.set('Para rolar, junte indicador e médio e mova para cima/baixo. Com três dedos levantados: mova para os lados para trocar de área; para baixo para minimizar. Ctrl+Alt+G pausa.')
 
-    def draw(self,point):
+    def draw(self,point,progress=0.):
         self.canvas.delete('all')
         w = max(520,self.canvas.winfo_width())
         h = 205
         if self.progress.stage == 0:
-            self.canvas.create_text(w/2,h/2,text='Mostre a mão aberta\npara aparecer o cursor',fill='#b5cad9',font=('sans',16),justify='center')
+            self.canvas.create_text(w/2,h/2,text='Levante só o indicador\npara aparecer o cursor',fill='#b5cad9',font=('sans',16),justify='center')
         target = self.progress.target
         if target:
             x,y = target[0]*w,target[1]*h
@@ -143,6 +143,7 @@ class Tutorial:
         if point:
             x,y = point[0]*w,point[1]*h
             self.canvas.create_oval(x-7,y-7,x+7,y+7,fill='#65e5d3',outline='white',width=2)
+            self.canvas.create_arc(x-14,y-14,x+14,y+14,start=90,extent=-360*progress,style='arc',outline='white',width=3)
         if self.progress.done:
             self.canvas.create_text(w/2,h/2,text='Treino concluído',fill='#65e5d3',font=('sans',20,'bold'))
 

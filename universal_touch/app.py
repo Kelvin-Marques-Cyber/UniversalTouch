@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from .backends import create_mouse, set_dpi_awareness
-from .gestures import GestureController
+from .precise_control import PreciseController
 from . import __version__
 from .preferences import Preferences
 
@@ -26,6 +26,7 @@ class CursorHint:
         self.canvas = tk.Canvas(self.window,width=28,height=28,bg='#101820',highlightthickness=0)
         self.canvas.pack()
         self.circle = self.canvas.create_oval(5,5,23,23,outline='#65e5d3',width=2)
+        self.progress_arc = self.canvas.create_arc(2,2,26,26,start=90,extent=0,style='arc',outline='#ffffff',width=3)
         self.canvas.create_line(14,0,14,5,fill='#65e5d3')
         self.canvas.create_line(0,14,5,14,fill='#65e5d3')
         if sys.platform == 'win32':
@@ -34,7 +35,7 @@ class CursorHint:
         self.window.update_idletasks()
         self.configured = False
 
-    def show(self, point, pressed=False):
+    def show(self, point, pressed=False,progress=0.):
         if point is None:
             self.hide()
             return
@@ -58,6 +59,7 @@ class CursorHint:
             self.mouse.passthrough(self.window.winfo_id())
             self.configured = True
         self.canvas.itemconfigure(self.circle,outline='#fbbf24' if pressed else '#65e5d3')
+        self.canvas.itemconfigure(self.progress_arc,extent=-360*max(0.,min(1.,progress)))
 
     def hide(self): self.window.withdraw()
     def close(self): self.window.destroy()
@@ -77,9 +79,10 @@ class Application:
         self.job = None
         self.preferences = preferences if preferences is not None else Preferences()
         self.tutorial = None
+        self.toolbar = None
         root.title('UniversalTouch')
-        root.geometry('490x620')
-        root.minsize(470,600)
+        root.geometry('490x650')
+        root.minsize(470,620)
         root.configure(bg='#101820')
         root.protocol('WM_DELETE_WINDOW',self.close)
         root.bind('<Escape>',lambda _: self.pause())
@@ -103,19 +106,26 @@ class Application:
         self.start_button = ttk.Button(panel,text='Iniciar gestos',command=self.toggle)
         self.start_button.pack(fill='x')
         ttk.Button(panel,text='Aprender os gestos · treino interativo',command=self.open_tutorial).pack(fill='x',pady=(8,0))
-        ttk.Label(panel,text='Primeiro, mostre a mão aberta por um instante.',wraplength=420).pack(anchor='w',pady=(12,14))
+        ttk.Label(panel,text='Indicador para apontar. Junte polegar e indicador; solte para clicar.',wraplength=420).pack(anchor='w',pady=(12,14))
         self.show_hint = tk.BooleanVar(value=True)
         self.show_preview = tk.BooleanVar(value=False)
         self.mirror = tk.BooleanVar(value=True)
         ttk.Checkbutton(panel,text='Indicador discreto junto ao cursor',variable=self.show_hint).pack(anchor='w',pady=3)
         ttk.Checkbutton(panel,text='Mostrar prévia da câmera (opcional)',variable=self.show_preview,command=self.preview_changed).pack(anchor='w',pady=3)
         ttk.Checkbutton(panel,text='Espelhar movimento horizontal',variable=self.mirror,command=self.mirror_changed).pack(anchor='w',pady=3)
-        self.preview_label = ttk.Label(panel)
-        help_text=('Indicador → mover o cursor\n'
-                   'Polegar + indicador → clique; segure para arrastar\n'
-                   'Polegar + médio → clique direito\n'
-                   'Dois dedos erguidos → rolagem vertical\n'
-                   'Punho fechado → soltar e parar o cursor')
+        ttk.Label(panel,text='Velocidade da mão · menor = mais precisão').pack(anchor='w',pady=(10,0))
+        self.gain = tk.DoubleVar(value=1.8)
+        ttk.Scale(panel,from_=.8,to=3.,variable=self.gain,command=self.gain_changed).pack(fill='x',pady=(4,0))
+        self.preview_window=tk.Toplevel(root)
+        self.preview_window.title('UniversalTouch · câmera')
+        self.preview_window.geometry('270x220')
+        self.preview_window.withdraw()
+        self.preview_label = ttk.Label(self.preview_window,text='Câmera desligada',anchor='center')
+        self.preview_label.pack(fill='both',expand=True,padx=10,pady=10)
+        self.preview_window.protocol('WM_DELETE_WINDOW',self.hide_preview)
+        help_text=('Indicador sozinho → mover · pinça → clicar\n'
+                   'Indicador + médio juntos → rolar para cima/baixo\n'
+                   'Três dedos → lados: áreas de trabalho · baixo: minimizar')
         ttk.Label(panel,text=help_text,wraplength=420,justify='left').pack(anchor='w',pady=(18,10))
         ttk.Label(panel,text='Ctrl+Alt+G: iniciar/pausar\nCtrl+Alt+Shift+G: sair · Esc: pausar nesta janela',
                   foreground='#a5b5c7',wraplength=420).pack(anchor='w',pady=4)
@@ -126,7 +136,7 @@ class Application:
         if self.closed: return
         try:
             self.mouse = create_mouse()
-            self.controller = GestureController(self.mouse,mirror=self.mirror.get())
+            self.controller = PreciseController(self.mouse,mirror=self.mirror.get(),gain=self.gain.get())
             self.hint = CursorHint(self.root,self.mouse)
             if not self.mouse.hotkeys_available:
                 self.metrics.set(f'{self.mouse.name} · atalhos globais indisponíveis; use a janela')
@@ -148,7 +158,7 @@ class Application:
         self.pause()
         from .tutorial_ui import Tutorial
         self.tutorial = Tutorial(self.root,self.camera_index,self.tutorial_closed,
-                                 fps=self.fps,mirror=self.mirror.get())
+                                 fps=self.fps,mirror=self.mirror.get(),gain=self.gain.get())
 
     def tutorial_closed(self,accepted):
         self.tutorial = None
@@ -190,7 +200,9 @@ class Application:
             self.running = True
             self.started, self.frame_count = time.monotonic(), 0
             self.start_button.configure(text='Pausar · desligar câmera')
-            self.status.set('Mostre a mão aberta para ativar')
+            self.status.set('Levante só o indicador para mover o cursor')
+            if self.show_preview.get():self.preview_window.deiconify()
+            self.show_toolbar()
             self.tick()
         except Exception as exc:
             self.pause()
@@ -206,9 +218,12 @@ class Application:
         if self.camera: self.camera.close()
         self.camera = self.tracker = None
         if self.hint: self.hint.hide()
+        if self.toolbar is not None:self.toolbar.withdraw()
         self.last_result = None
         self.preview_label.configure(image='')
         self.preview_label.image = None
+        self.preview_label.configure(text='Câmera desligada')
+        self.preview_window.withdraw()
         gc.collect()
         self.start_button.configure(text='Iniciar gestos')
         self.status.set('Pausado · câmera desligada')
@@ -218,15 +233,46 @@ class Application:
             if self.running: self.pause()
             self.controller.mirror = self.mirror.get()
 
+    def gain_changed(self,value):
+        if self.controller:
+            if self.running:self.pause()
+            self.controller.gain=float(value)
+
+    def show_toolbar(self):
+        if self.toolbar is None:
+            self.toolbar=tk.Toplevel(self.root)
+            self.toolbar.title('UniversalTouch · ações')
+            self.toolbar.attributes('-topmost',True)
+            self.toolbar.resizable(False,False)
+            self.toolbar.protocol('WM_DELETE_WINDOW',self.pause)
+            row=ttk.Frame(self.toolbar,padding=6)
+            row.pack()
+            for title,command in [('Pausar',self.pause),('Clique direito',lambda:self.choose_action('right')),
+                                  ('Arrastar / soltar',lambda:self.choose_action('drag')),
+                                  ('Rolar ↑',lambda:self.scroll(3)),('Rolar ↓',lambda:self.scroll(-3))]:
+                ttk.Button(row,text=title,command=command).pack(side='left',padx=2)
+            self.toolbar.geometry(f'+{max(0,self.root.winfo_screenwidth()//2-300)}+10')
+        self.toolbar.deiconify()
+
+    def choose_action(self,action):
+        if self.controller and self.running:
+            self.controller.set_action(action)
+            self.status.set('Próximo alvo: clique direito' if action=='right' else 'Faça uma pinça sobre o objeto; mova e solte para arrastar')
+
+    def scroll(self,steps):
+        if self.mouse and self.running:self.mouse.scroll(steps)
+
     def preview_changed(self):
         if self.show_preview.get():
-            self.preview_label.pack(pady=8)
-            self.root.geometry('490x780')
+            self.preview_window.deiconify()
         else:
-            self.preview_label.pack_forget()
+            self.preview_window.withdraw()
             self.preview_label.configure(image='')
             self.preview_label.image = None
-            self.root.geometry('490x620')
+
+    def hide_preview(self):
+        self.show_preview.set(False)
+        self.preview_changed()
 
     def tick(self):
         self.job = None
@@ -242,7 +288,7 @@ class Application:
                 if self.hint:
                     if self.show_hint.get() and result.pointer:
                         try:
-                            self.hint.show(result.pointer,result.pressed)
+                            self.hint.show(result.pointer,result.pressed,result.progress)
                         except Exception:
                             self.show_hint.set(False)
                             self.hint.hide()
@@ -277,7 +323,7 @@ class Application:
                 cv2.circle(disp,(x,y),3,(100,235,210),-1)
         rgb = cv2.cvtColor(disp,cv2.COLOR_BGR2RGB)
         image = tk.PhotoImage(data=b'P6\n240 180\n255\n'+rgb.tobytes(),format='PPM')
-        self.preview_label.configure(image=image)
+        self.preview_label.configure(image=image,text='')
         self.preview_label.image = image
 
     def close(self):
