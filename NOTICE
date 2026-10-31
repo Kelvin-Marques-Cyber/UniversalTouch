@@ -1,0 +1,19 @@
+UniversalTouch
+Copyright 2026 Kelvin Marques and UniversalTouch contributors
+Licensed under the Apache License, Version 2.0.
+
+Desktop hand detection/landmark reference implementations and ONNX models:
+OpenCV Zoo, https://github.com/opencv/opencv_zoo
+Pinned source commit: 48b10fa505aeb51fbd127fc60a5c660040e823b7
+Original implementations are vendored unmodified in universal_touch/vendor/.
+Model-specific Apache-2.0 licenses accompany these files and downloads.
+Underlying hand models originate from Google MediaPipe.
+
+Android hand tracking: Google MediaPipe Tasks (Apache-2.0).
+OpenCV (Apache-2.0), NumPy (BSD-3-Clause), python-xlib (LGPL-2.1-or-later),
+optional python-evdev (BSD-3-Clause), Python (PSF), Tcl/Tk (permissive licenses),
+PyInstaller bootloader (GPL-2.0-or-later with bootloader exception).
+Binary packages include dependency license notices. See packaging/licenses/.
+
+Mudra was examined as prior art; no AGPL-licensed Mudra source is distributed
+as part of UniversalTouch. Gesture logic, GUI and OS adapters are original.

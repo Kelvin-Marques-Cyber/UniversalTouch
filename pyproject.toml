@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "universaltouch"
+version = "0.1.0"
+description = "Local, lightweight webcam hand control for Windows and Linux"
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+license = "Apache-2.0"
+authors = [{name = "Kelvin Marques"}]
+dependencies = [
+  "numpy>=2.0,<2.3",
+  "opencv-python-headless==4.12.0.88",
+  "python-xlib==0.33; sys_platform == 'linux'",
+]
+
+[project.optional-dependencies]
+wayland = ["evdev>=1.7,<2; sys_platform == 'linux'"]
+build = ["pyinstaller>=6.15,<7"]
+
+[project.scripts]
+universaltouch = "universal_touch.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/Kelvin-Marques-Cyber/UniversalTouch"
+
+[tool.setuptools.packages.find]
+include = ["universal_touch*"]
+
+[tool.setuptools.package-data]
+universal_touch = ["models/*.onnx", "models/*LICENSE*", "models/*.json", "vendor/*LICENSE", "vendor/UPSTREAM.json"]

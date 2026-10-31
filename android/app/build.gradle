@@ -1,0 +1,86 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'org.universaltouch.android'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'org.universaltouch.android'
+        minSdk 24
+        targetSdk 35
+        versionCode 100
+        versionName '0.1.0'
+        ndk { abiFilters 'arm64-v8a', 'armeabi-v7a' }
+    }
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    def signingStore = System.getenv('ANDROID_KEYSTORE_PATH')
+    if (signingStore) {
+        signingConfigs {
+            production {
+                storeFile file(signingStore)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingStore ? signingConfigs.production : signingConfigs.debug
+            if (!signingStore) { versionNameSuffix '-preview'; applicationIdSuffix '.preview' }
+        }
+    }
+    androidResources { noCompress += 'task' }
+    packaging { jniLibs { useLegacyPackaging = true } }
+    sourceSets { test.java.srcDirs += 'src/gestureTest/java' }
+}
+
+dependencies {
+    implementation 'com.google.mediapipe:tasks-vision:0.10.35'
+    testImplementation 'junit:junit:4.13.2'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
+}
+
+// The app itself is offline. Only the build downloads the pinned Google model.
+def modelFile = layout.projectDirectory.file('src/main/assets/hand_landmarker.task')
+def modelSha256 = 'fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1'
+tasks.register('downloadHandModel') {
+    outputs.file(modelFile)
+    outputs.upToDateWhen {
+        def file = modelFile.asFile
+        file.exists() && java.security.MessageDigest.getInstance('SHA-256').digest(file.bytes).encodeHex().toString() == modelSha256
+    }
+    doLast {
+        def destination = modelFile.asFile
+        destination.parentFile.mkdirs()
+        def temporary = new File(destination.parentFile, destination.name + '.part')
+        try {
+            new URI('https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task').toURL().withInputStream { input ->
+                temporary.withOutputStream { output -> output << input }
+            }
+            def actual = java.security.MessageDigest.getInstance('SHA-256').digest(temporary.bytes).encodeHex().toString()
+            if (actual != modelSha256) throw new GradleException('Hand model SHA-256 mismatch')
+            java.nio.file.Files.move(temporary.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        } finally { temporary.delete() }
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'downloadHandModel' }
+
+def gestureClasses = layout.buildDirectory.dir('gesture-tests')
+def compileGestureTests = tasks.register('compileGestureTests', JavaCompile) {
+    source = files('src/main/java/org/universaltouch/android/GestureEngine.java', 'src/main/java/org/universaltouch/android/FrameMailbox.java', 'src/main/java/org/universaltouch/android/CoordinateMapper.java', 'src/main/java/org/universaltouch/android/TutorialProgress.java', 'src/main/java/org/universaltouch/android/FrameDispatcher.java', fileTree('src/gestureTest/java'))
+    classpath = files()
+    destinationDirectory = gestureClasses
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+tasks.register('gestureTest', JavaExec) {
+    dependsOn compileGestureTests
+    classpath = files(gestureClasses)
+    mainClass = 'org.universaltouch.android.AllTests'
+}
+tasks.named('check').configure { dependsOn 'gestureTest' }

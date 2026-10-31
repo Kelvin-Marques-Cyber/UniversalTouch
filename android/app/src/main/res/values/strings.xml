@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
+    <string name="app_name">UniversalTouch</string>
+    <string name="accessibility_description">Controle por gestos da sua mão. O UniversalTouch desenha um ponteiro sobre outros aplicativos e envia toques e rolagens apenas enquanto você inicia uma sessão pela câmera. Não lê o conteúdo das janelas, não grava imagens e não acessa a internet. Ative este serviço manualmente somente se desejar esse controle. Pare a sessão pelo aplicativo ou pela notificação. Você pode desativar o serviço a qualquer momento nas configurações de acessibilidade.</string>
+</resources>
