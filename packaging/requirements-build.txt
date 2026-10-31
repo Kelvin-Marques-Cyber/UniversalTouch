@@ -1,0 +1,15 @@
+# Native desktop release toolchain. Install on each target OS with Python 3.11.
+# App runtime pins are included so rebuilds do not silently change inference.
+setuptools==84.2.1
+wheel==0.48.0
+packaging==26.3
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.9
+altgraph==0.17.5
+pefile==2024.8.26; sys_platform == 'win32'
+pywin32-ctypes==0.2.3; sys_platform == 'win32'
+numpy==2.2.6
+opencv-python-headless==4.12.0.88
+python-xlib==0.33; sys_platform == 'linux'
+six==1.17.0; sys_platform == 'linux'
+evdev==1.9.3; sys_platform == 'linux'

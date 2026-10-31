@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=UniversalTouch
+Comment=Controle por gestos com processamento local
+Exec=universaltouch
+Icon=input-touchpad
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=gesture;hand;camera;accessibility;

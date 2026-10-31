@@ -1,0 +1,4 @@
+# Optional: let the active local desktop session create virtual input devices.
+# Install manually as /etc/udev/rules.d/70-universaltouch-uinput.rules.
+# This grants access to /dev/uinput, not access to physical keyboard event devices.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess"
